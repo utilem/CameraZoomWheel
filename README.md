@@ -41,7 +41,7 @@ import SwiftUI
 import CameraZoomWheel
 
 struct CameraView: View {
-    @State private var zoomLevel: Double = 1.0
+    @State private var zoomLevel: CGFloat = 1.0
     
     var body: some View {
         ZStack {
@@ -108,7 +108,7 @@ This ensures your zoom control perfectly matches what the device camera can actu
 Main orchestrating component that manages both button and wheel modes.
 
 **Properties:**
-- `zoomLevel: Binding<Double>` - Current zoom level
+- `zoomLevel: Binding<CGFloat>` - Current zoom level
 - `steps: [ZoomStep]` - Available zoom levels and display configuration
 
 **Behavior:**  
@@ -152,7 +152,7 @@ Data model for zoom level configuration.
 
 ```swift
 struct ZoomStep {
-    let zoom: Double
+    let zoom: CGFloat
     let focalLength: String?
     let type: DisplayType
     
