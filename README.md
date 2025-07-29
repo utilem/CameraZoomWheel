@@ -127,12 +127,25 @@ Advanced circular zoom slider with logarithmic distribution.
 - Magnetic snapping during interaction
 
 ### ZoomButtonBar
-Discrete zoom level buttons for quick access.
+Intelligent discrete zoom buttons that adapt to available ZoomSteps.
+
+**Smart Button Grouping:**
+- **Ultra-wide Button**: All ZoomSteps < 1.0 (e.g., 0.5×)
+- **1× Button**: ZoomSteps 1.0 ≤ x < 2.0 (e.g., 1.0, 1.2, 1.5)
+- **2× Button**: ZoomSteps 2.0 ≤ x < 3.0 (e.g., 2.0, 2.5)
+- **3× Button**: All ZoomSteps ≥ 3.0 (e.g., 3.0, 5.0, 10.0) - acts as "Tele+" button
+- **Slider Integration**: 3× button shows current zoom value even for intermediate values (e.g., 9.6×)
+
+**Cycling Behavior:**
+- **First tap on inactive button**: Goes to base value (1.0, 2.0, 3.0)
+- **Subsequent taps**: Cycles through all values in that group
+- **Group switching**: Other buttons reset to their base values
+- **Example**: 1× button cycles: 1.0 → 1.2 → 1.5 → 1.0
 
 **Features:**
-- Animated selection with scaling
-- Supports 0.5×, 1×, 2×, 3× by default
-- Customizable via ZoomStep configuration
+- Animated selection with scaling and color changes
+- Automatically adapts to available ZoomSteps
+- Intelligent grouping prevents UI clutter
 
 ### ZoomStep
 Data model for zoom level configuration.

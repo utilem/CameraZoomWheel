@@ -15,7 +15,7 @@ public struct ZoomControl: View {
     let minZoomLevel: CGFloat
     let maxZoomLevel: CGFloat
     
-    let buttonZoomValues: [ZoomStep] = ZoomStep.zoomButtons
+    // Remove hardcoded buttonZoomValues - will use zoomSteps directly
     
     @State private var showSlider = false
     @State private var longPressTimer: Timer?
@@ -52,7 +52,7 @@ public struct ZoomControl: View {
                 // Zoom Button Bar
                 ZoomButtonBar(
                     selectedZoom: $zoomLevel,
-                    zoomValues: buttonZoomValues
+                    zoomValues: zoomSteps
                 )
                 .padding(.bottom)
                 .transition(.asymmetric(
