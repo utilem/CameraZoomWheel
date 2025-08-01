@@ -205,7 +205,7 @@ cd Example/ZoomWheelDemo
 ## Requirements
 
 - iOS 17.0+
-- Swift 6.2+
+- Swift 5.9+
 - Xcode 16.0+
 
 ## Contributing
