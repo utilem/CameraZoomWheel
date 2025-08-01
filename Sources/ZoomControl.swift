@@ -25,6 +25,7 @@ public struct ZoomControl: View {
     
     @State private var previousDragLocation: CGPoint?
     @State private var sliderIsDragging = false  // Für Slider Drag State
+    @State private var lastSnappedZoom: Double = 0  // Track last snapped value for haptic feedback
 
     public init(zoomLevel: Binding<CGFloat>, steps: [ZoomStep] = ZoomStep.defaultSteps) {
         self._zoomLevel = zoomLevel
@@ -62,6 +63,7 @@ public struct ZoomControl: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: showSlider)
+        .sensoryFeedback(.increase, trigger: lastSnappedZoom)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { value in
@@ -222,6 +224,11 @@ public struct ZoomControl: View {
             let distance = abs(nearestSnap - targetZoom)
 
             if distance < snapThreshold {
+                // Trigger haptic feedback when snapping to a new zoom level
+                if abs(nearestSnap - lastSnappedZoom) > 0.01 { // Avoid repeated feedback for same value
+                    lastSnappedZoom = nearestSnap
+                }
+                
                 // Smooth magnetic attraction to snap point
                 let snapStrength: Double = 0.2 // Strength of the magnetic effect
                 return targetZoom + (nearestSnap - targetZoom) * snapStrength
