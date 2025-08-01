@@ -12,20 +12,20 @@ public struct LikeGlassModifier<S: Shape>: ViewModifier {
     let shape: S
     
     public func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
+//        if #available(iOS 26, *) {
+//            content
+//                .background(
+//                    shape
+//                        .fill(color.opacity(0.1))
+//                )
+//                .glassEffect(.regular, in: shape)
+//        } else {
             content
                 .background(
                     shape
                         .fill(color.opacity(0.1))
                 )
-                .glassEffect(.regular, in: shape)
-        } else {
-            content
-                .background(
-                    shape
-                        .fill(color.opacity(0.1))
-                )
-        }
+//        }
     }
 }
 
