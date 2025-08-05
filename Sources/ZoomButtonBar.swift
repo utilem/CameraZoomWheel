@@ -57,7 +57,7 @@ public struct ZoomButtonBar: View {
     }()
     
     public init(selectedZoom: Binding<CGFloat>,
-         zoomValues: [ZoomStep] = ZoomStep.zoomButtons
+         zoomValues: [ZoomStep] = ZoomStep.defaultSteps
     ) {
         self._selectedZoom = selectedZoom
         self.zoomValues = zoomValues
