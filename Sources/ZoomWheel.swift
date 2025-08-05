@@ -123,12 +123,12 @@ public struct ZoomWheel: View {
         // Main markings for zoom steps (logarithmically distributed)
         ForEach(Array(zoomSteps.enumerated()), id: \.offset) { index, step in
             let angle = logarithmicZoomToAngle(step.zoom)
-            let isActive = abs(step.zoom - zoomLevel) < 0.1
-            
             let distanceToCenter = abs(angle + wheelRotation - 0)
-            let normalizedDistance = min(distanceToCenter / 15.0, 1.0) // 30° als Referenzbereich
-            
-            // Berechne Scaling und Opacity basierend auf Distanz
+            let normalizedDistance = min(distanceToCenter / 15.0, 1.0) // 30° as reference
+
+            let isActive = normalizedDistance < 0.3
+
+            // Calculate Scaling and Opacity based on distance
             let scale =  (0.3 + 0.7 * normalizedDistance)
             let opacity = normalizedDistance
             
@@ -145,8 +145,7 @@ public struct ZoomWheel: View {
                             Text(unit)
                                 .font(.caption2)
                                 .scaleEffect(1)
-                                .foregroundColor(isActive ? .yellow.opacity(0.9) : .white.opacity(0.7))
-                                .opacity(isActive ? 1 : opacity)
+                                .foregroundColor(isActive ? .yellow.opacity(0.9) : .white.opacity(0.5))
                         }
                     }
                     .offset(y: -radius + 40)
