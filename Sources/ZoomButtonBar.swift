@@ -25,7 +25,15 @@ private struct ButtonGroup {
     }
 }
 
+/// Utility enum providing number formatting for zoom values.
 public enum Formatters {
+    /// Formats a zoom value with specified decimal places and optional suffix.
+    /// 
+    /// - Parameters:
+    ///   - number: The zoom value to format
+    ///   - digits: Number of decimal places (defaults to 1)
+    ///   - suffix: Optional suffix to append (e.g., "×")
+    /// - Returns: Formatted string representation of the zoom value
     public static func numberFormatter(_ number: Double, digits: Int = 1, suffix: String? = nil) -> String {
         let formatter: NumberFormatter = {
             let formatter = NumberFormatter()
@@ -39,14 +47,42 @@ public enum Formatters {
     }
 }
 
+/// Intelligent discrete zoom buttons that adapt to available zoom steps with smart grouping.
+///
+/// `ZoomButtonBar` automatically groups zoom steps into logical button ranges and implements
+/// sophisticated cycling behavior. First tap on a button activates its base value, subsequent
+/// taps cycle through all values in that group.
+///
+/// ## Smart Button Grouping
+/// - **Ultra-wide Button**: All ZoomSteps < 1.0 (e.g., 0.5×)
+/// - **1× Button**: ZoomSteps 1.0 ≤ x < 2.0 (e.g., 1.0, 1.2, 1.5)
+/// - **2× Button**: ZoomSteps 2.0 ≤ x < 3.0 (e.g., 2.0, 2.5)
+/// - **3× Button**: All ZoomSteps ≥ 3.0 (e.g., 3.0, 5.0, 10.0) - acts as "Tele+" button
+///
+/// ## Cycling Behavior
+/// - **First tap on inactive button**: Goes to base value (1.0, 2.0, 3.0)
+/// - **Subsequent taps**: Cycles through all values in that group
+/// - **Group switching**: Other buttons reset to their base values
+/// - **Example**: 1× button cycles: 1.0 → 1.2 → 1.5 → 1.0
+///
+/// ## Usage
+/// ```swift
+/// ZoomButtonBar(
+///     selectedZoom: $zoomLevel,
+///     zoomValues: ZoomStep.defaultSteps
+/// )
+/// ```
 public struct ZoomButtonBar: View {
+    /// Current selected zoom level binding
     @Binding var selectedZoom: CGFloat
+    
+    /// Array of zoom steps to group into buttons
     let zoomValues: [ZoomStep]
     
-    // Button groups based on zoom ranges
+    /// Button groups based on zoom ranges
     private let buttonGroups: [ButtonGroup]
     
-    // State for cycling through values in each group
+    /// State for cycling through values in each group
     @State private var groupCycleIndices: [Int] = []
         
     let formatter: NumberFormatter = {
@@ -56,6 +92,11 @@ public struct ZoomButtonBar: View {
         return formatter
     }()
     
+    /// Creates a zoom button bar with the specified zoom binding and steps.
+    /// 
+    /// - Parameters:
+    ///   - selectedZoom: Binding to current selected zoom level
+    ///   - zoomValues: Array of zoom steps to group into buttons (defaults to `ZoomStep.defaultSteps`)
     public init(selectedZoom: Binding<CGFloat>,
          zoomValues: [ZoomStep] = ZoomStep.defaultSteps
     ) {

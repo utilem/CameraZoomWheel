@@ -7,12 +7,47 @@
 
 import SwiftUI
 
+/// Main orchestrating component for camera zoom controls with dual interaction modes.
+///
+/// `ZoomControl` provides both discrete button-based zoom selection and continuous circular 
+/// slider control, switching between modes via long press gesture. Features magnetic snapping 
+/// to zoom steps and haptic feedback during interaction.
+///
+/// ## Features
+/// - **Dual Interface**: Button bar for quick selection, circular wheel for precise control
+/// - **Long Press Activation**: Hold to switch from buttons to continuous slider
+/// - **Magnetic Snapping**: Smooth attraction to defined zoom steps during dragging
+/// - **Haptic Feedback**: Tactile response when snapping to zoom levels
+/// - **Auto-Hide**: Slider automatically disappears after inactivity
+///
+/// ## Usage
+/// ```swift
+/// struct CameraView: View {
+///     @State private var zoomLevel: CGFloat = 1.0
+///     
+///     var body: some View {
+///         ZStack {
+///             CameraPreview()
+///             VStack {
+///                 Spacer()
+///                 ZoomControl(zoomLevel: $zoomLevel)
+///             }
+///         }
+///     }
+/// }
+/// ```
 @MainActor
 public struct ZoomControl: View {
+    /// Current zoom level binding that updates as user interacts with controls
     @Binding var zoomLevel: CGFloat
+    
+    /// Array of discrete zoom steps that define snapping points and button values
     let zoomSteps: [ZoomStep]
 
+    /// Minimum zoom level derived from first zoom step
     let minZoomLevel: CGFloat
+    
+    /// Maximum zoom level derived from last zoom step
     let maxZoomLevel: CGFloat
     
     // Remove hardcoded buttonZoomValues - will use zoomSteps directly
@@ -27,6 +62,11 @@ public struct ZoomControl: View {
     @State private var sliderIsDragging = false  // Für Slider Drag State
     @State private var lastSnappedZoom: Double = 0  // Track last snapped value for haptic feedback
 
+    /// Creates a zoom control with the specified zoom level binding and steps.
+    /// 
+    /// - Parameters:
+    ///   - zoomLevel: Binding to current zoom level that will be updated by user interaction
+    ///   - steps: Array of zoom steps defining available zoom levels (defaults to `ZoomStep.defaultSteps`)
     public init(zoomLevel: Binding<CGFloat>, steps: [ZoomStep] = ZoomStep.defaultSteps) {
         self._zoomLevel = zoomLevel
         self.zoomSteps = steps

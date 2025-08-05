@@ -7,13 +7,52 @@
 
 import SwiftUI
 
+/// Advanced circular zoom slider with logarithmic distribution and magnetic snapping.
+///
+/// `ZoomWheel` provides a sophisticated 90° arc slider (45° to 135°) with logarithmic zoom 
+/// distribution for natural camera zoom progression. Features dynamic tick marks, zoom step 
+/// indicators, and scaling/opacity effects based on distance from center position.
+///
+/// ## Features
+/// - **Logarithmic Distribution**: Natural zoom progression across the arc
+/// - **Dynamic Tick Marks**: Fine (0.1) and major (1.0) zoom increments
+/// - **Zoom Step Indicators**: Visual markers for defined zoom steps with labels
+/// - **Distance-Based Scaling**: Elements scale and fade based on proximity to center
+/// - **Curved Geometry**: Uses chord-height formula for precise radius calculations
+///
+/// ## Technical Details
+/// - **Arc Range**: 90° from 45° to 135°
+/// - **Zoom Mapping**: `zoom = exp(logMin + progress * (logMax - logMin))`
+/// - **Chord Formula**: `r = (chord² / (8 * height)) + (height / 2)`
+///
+/// ## Usage
+/// Typically used as part of `ZoomControl` rather than directly:
+/// ```swift
+/// ZoomWheel(
+///     zoomLevel: $zoomLevel,
+///     minZoomLevel: 0.5,
+///     maxZoomLevel: 10.0,
+///     zoomSteps: ZoomStep.defaultSteps,
+///     height: 130
+/// )
+/// ```
 public struct ZoomWheel: View {
+    /// Current zoom level binding
     @Binding var zoomLevel: CGFloat
+    
+    /// Minimum zoom level for the slider range
     let minZoomLevel: CGFloat
+    
+    /// Maximum zoom level for the slider range
     let maxZoomLevel: CGFloat
+    
+    /// Array of zoom steps for tick marks and magnetic snapping
     let zoomSteps: [ZoomStep]
+    
+    /// Height of the zoom wheel component
     let height: CGFloat
 
+    /// Width of the zoom wheel (full screen width)
     let width: CGFloat = UIScreen.main.bounds.width
         
     @State private var wheelRotation: CGFloat = 0
@@ -25,6 +64,14 @@ public struct ZoomWheel: View {
     @State private var minRotation: CGFloat = 0
     @State private var maxRotation: CGFloat = 0
     
+    /// Creates a zoom wheel with the specified parameters.
+    /// 
+    /// - Parameters:
+    ///   - zoomLevel: Binding to current zoom level
+    ///   - minZoomLevel: Minimum zoom level for the slider range
+    ///   - maxZoomLevel: Maximum zoom level for the slider range
+    ///   - zoomSteps: Array of zoom steps for tick marks and labels
+    ///   - height: Height of the zoom wheel component
     public init(
         zoomLevel: Binding<CGFloat>,
         minZoomLevel: CGFloat,
