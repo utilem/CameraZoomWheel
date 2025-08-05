@@ -85,13 +85,6 @@ public struct ZoomButtonBar: View {
     /// State for cycling through values in each group
     @State private var groupCycleIndices: [Int] = []
         
-    let formatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.minimumFractionDigits = 1
-        formatter.maximumFractionDigits = 1
-        return formatter
-    }()
-    
     /// Creates a zoom button bar with the specified zoom binding and steps.
     /// 
     /// - Parameters:
