@@ -43,7 +43,7 @@ public struct CircularSegment: Shape {
     
     private var segmentAngle: Double {
         let alpha = acos((radius - height) / radius)
-        return alpha * 180 / .pi
+        return alpha * 180 / Double.pi
     }
     
     /// Creates a circular segment path within the specified rectangle.
