@@ -176,10 +176,17 @@ struct ZoomStep {
 - **Relative Delta System**: Smooth movement between consecutive drag events
 - **Direction Consistency**: Reliable left/right drag behavior
 
+### Code Organization
+- **DRY Compliance**: Shared zoom conversion logic in `CGFloat+ZoomConversion` extension
+- **Parameterized Design**: Configurable min/max zoom levels instead of hardcoded constants
+- **Extension-Based Utilities**: Instance methods on `CGFloat` for natural API (`zoomLevel.toAngle()`)
+- **Clean Refactoring**: Eliminated code duplication between `ZoomWheel` and `ZoomControl`
+
 ### Technical Details
 - **Logarithmic Distribution**: `zoom = exp(logMin + progress * (logMax - logMin))`
 - **Chord-Height Formula**: `r = (chord² / (8 * height)) + (height / 2)`
 - **Animation Timing**: 0.3s easeInOut for all transitions
+- **Code Organization**: Shared zoom conversion logic extracted to `CGFloat+ZoomConversion` extension for DRY compliance
 
 ## Demo App
 
