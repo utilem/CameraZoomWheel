@@ -122,7 +122,7 @@ public struct ZoomWheel: View {
     private var markings: some View {
         // Main markings for zoom steps (logarithmically distributed)
         ForEach(Array(zoomSteps.enumerated()), id: \.offset) { index, step in
-            let angle = logarithmicZoomToAngle(step.zoom)
+            let angle = step.zoom.toZoomAngle(min: minZoomLevel, max: maxZoomLevel)
             let distanceToCenter = abs(angle + wheelRotation - 0)
             let normalizedDistance = min(distanceToCenter / 15.0, 1.0) // 30° as reference
 
@@ -194,26 +194,26 @@ public struct ZoomWheel: View {
         }
         .task {
             cachedTickMarks = generateTickMarks()
-            cachedTickAngles = cachedTickMarks.map { logarithmicZoomToAngle($0) }
+            cachedTickAngles = cachedTickMarks.map { $0.toZoomAngle(min: minZoomLevel, max: maxZoomLevel) }
 
-            minRotation = -logarithmicZoomToAngle(maxZoomLevel)
-            maxRotation = -logarithmicZoomToAngle(minZoomLevel)
+            minRotation = -maxZoomLevel.toZoomAngle(min: minZoomLevel, max: maxZoomLevel)
+            maxRotation = -minZoomLevel.toZoomAngle(min: minZoomLevel, max: maxZoomLevel)
         }
         .onAppear {
             // Correct initial rotation:
             // The yellow indicator is at 90°, we want the current zoomLevel to appear there
             // So we need to rotate the wheel so that the marking for zoomLevel is at 90°
-            let currentZoomAngle = logarithmicZoomToAngle(zoomLevel)
+            let currentZoomAngle = zoomLevel.toZoomAngle(min: minZoomLevel, max: maxZoomLevel)
             wheelRotation = -currentZoomAngle
             targetRotation = -currentZoomAngle
 
         }
         .onChange(of: zoomLevel) { oldValue, newValue in
-            let currentZoomAngle = logarithmicZoomToAngle(newValue)
+            let currentZoomAngle = newValue.toZoomAngle(min: minZoomLevel, max: maxZoomLevel)
             targetRotation = -currentZoomAngle
             
             // Smooth interpolation
-            func lerp(from: Double, to: Double, factor: Double) -> Double {
+            func lerp(from: CGFloat, to: CGFloat, factor: CGFloat) -> CGFloat {
                 return from + (to - from) * factor
             }
             wheelRotation = lerp(from: wheelRotation, to: targetRotation, factor: 0.6)
@@ -253,24 +253,4 @@ public struct ZoomWheel: View {
     }
     
     // Logarithmic distribution of zoom values across 90° (45° to 135°)
-    private func logarithmicZoomToAngle(_ zoom: CGFloat) -> CGFloat {
-        // Logarithmic scaling
-        let logMin = log(minZoomLevel)
-        let logMax = log(maxZoomLevel)
-        let logZoom = log(zoom)
-        
-        let progress = (logZoom - logMin) / (logMax - logMin)
-        return 45 + progress * 90 // From 45° to 135°
-    }
-    
-    private func logarithmicAngleToZoom(_ angle: CGFloat) -> CGFloat {
-        let progress = (angle - 45) / 90.0 // Normalize from 45°-135° to 0-1
-        
-        // Logarithmic inverse transformation
-        let logMin = log(minZoomLevel)
-        let logMax = log(maxZoomLevel)
-        let logZoom = logMin + progress * (logMax - logMin)
-        
-        return exp(logZoom)
-    }
 }
