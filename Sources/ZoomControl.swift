@@ -60,7 +60,7 @@ public struct ZoomControl: View {
     
     @State private var previousDragLocation: CGPoint?
     @State private var sliderIsDragging = false  // Für Slider Drag State
-    @State private var lastSnappedZoom: Double = 0  // Track last snapped value for haptic feedback
+    @State private var lastSnappedZoom: CGFloat = 0  // Track last snapped value for haptic feedback
 
     /// Creates a zoom control with the specified zoom level binding and steps.
     /// 
@@ -218,43 +218,25 @@ public struct ZoomControl: View {
     // Use ZoomWheel's logarithmic functions for consistent calculation
     private func updateZoomFromDrag(_ deltaX: CGFloat) {
         // Convert current zoom to angle using ZoomWheel's logic
-        let currentAngle = logarithmicZoomToAngle(zoomLevel)
+        let currentAngle = zoomLevel.toZoomAngle(min: minZoomLevel, max: maxZoomLevel)
         
         // Apply sensitivity to deltaX and convert to angle delta
-        let sensitivity: Double = 0.5 // Reduced sensitivity for smoother control
-        let angleDelta = -Double(deltaX) * sensitivity // Correct direction
+        let sensitivity: CGFloat = 0.5 // Reduced sensitivity for smoother control
+        let angleDelta = -CGFloat(deltaX) * sensitivity // Correct direction
         
         // Calculate new angle and convert back to zoom
         let newAngle = currentAngle + angleDelta
         let boundedAngle = max(45.0, min(135.0, newAngle)) // Clamp to 45°-135° range
-        let newZoomLevel = logarithmicAngleToZoom(boundedAngle)
+        let newZoomLevel = boundedAngle.zoomFromAngle(min: minZoomLevel, max: maxZoomLevel)
         
         let snappedZoomLevel = applyDragSnapping(newZoomLevel)
         zoomLevel = max(minZoomLevel, min(maxZoomLevel, snappedZoomLevel))
     }
     
     // Logarithmic distribution functions from ZoomWheel
-    private func logarithmicZoomToAngle(_ zoom: Double) -> Double {
-        let logMin = log(minZoomLevel)
-        let logMax = log(maxZoomLevel)
-        let logZoom = log(zoom)
-        
-        let progress = (logZoom - logMin) / (logMax - logMin)
-        return 45 + progress * 90 // From 45° to 135°
-    }
     
-    private func logarithmicAngleToZoom(_ angle: Double) -> Double {
-        let progress = (angle - 45) / 90.0 // Normalize from 45°-135° to 0-1
-        
-        let logMin = log(minZoomLevel)
-        let logMax = log(maxZoomLevel)
-        let logZoom = logMin + progress * (logMax - logMin)
-        
-        return exp(logZoom)
-    }
-    
-    private func applyDragSnapping(_ targetZoom: Double) -> Double {
-        let snapThreshold: Double = 0.05 // Sensitivity for snapping during drag
+    private func applyDragSnapping(_ targetZoom: CGFloat) -> CGFloat {
+        let snapThreshold: CGFloat = 0.05 // Sensitivity for snapping during drag
 
         // Use only zoomSteps as snap points
         let snapPoints = zoomSteps.map { $0.zoom }
@@ -270,7 +252,7 @@ public struct ZoomControl: View {
                 }
                 
                 // Smooth magnetic attraction to snap point
-                let snapStrength: Double = 0.2 // Strength of the magnetic effect
+                let snapStrength: CGFloat = 0.2 // Strength of the magnetic effect
                 return targetZoom + (nearestSnap - targetZoom) * snapStrength
             }
         }
