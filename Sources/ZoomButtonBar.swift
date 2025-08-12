@@ -34,7 +34,7 @@ public enum Formatters {
     ///   - digits: Number of decimal places (defaults to 1)
     ///   - suffix: Optional suffix to append (e.g., "×")
     /// - Returns: Formatted string representation of the zoom value
-    public static func numberFormatter(_ number: Double, digits: Int = 1, suffix: String? = nil) -> String {
+    public static func numberFormatter(_ number: CGFloat, digits: Int = 1, suffix: String? = nil) -> String {
         let formatter: NumberFormatter = {
             let formatter = NumberFormatter()
             formatter.minimumFractionDigits = 1
