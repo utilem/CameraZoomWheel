@@ -116,7 +116,22 @@ class CameraManager: NSObject {
     
     private func startSession() async {
         guard await isAuthorized else { return }
-        captureSession.startRunning()
+        
+        await withCheckedContinuation { continuation in
+            Task.detached { [weak self] in
+                await self?.captureSession.startRunning()
+                continuation.resume()
+            }
+        }
+    }
+    
+    private func stopSession() async {
+        await withCheckedContinuation { continuation in
+            Task.detached { [weak self] in
+                await self?.captureSession.stopRunning()
+                continuation.resume()
+            }
+        }
     }
     
     private func rotate(by angle: CGFloat, from connection: AVCaptureConnection) {
