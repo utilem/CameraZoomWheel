@@ -73,4 +73,5 @@ playground.xcworkspace
 .netrc
 
 *xcodeproj/xcuserdata/*
+*.xcscheme
 *.xcworkspacedata
