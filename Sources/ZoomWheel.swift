@@ -30,10 +30,8 @@ import SwiftUI
 /// ```swift
 /// ZoomWheel(
 ///     zoomLevel: $zoomLevel,
-///     minZoomLevel: 0.5,
-///     maxZoomLevel: 10.0,
 ///     zoomSteps: ZoomStep.defaultSteps,
-///     height: 130
+///     configuration: ZoomWheelConfiguration(height: 130)
 /// )
 /// ```
 public struct ZoomWheel: View {
@@ -41,18 +39,20 @@ public struct ZoomWheel: View {
     @Binding var zoomLevel: CGFloat
     
     /// Minimum zoom level for the slider range
-    let minZoomLevel: CGFloat
+    var minZoomLevel: CGFloat {
+        zoomSteps.first!.zoom
+    }
     
     /// Maximum zoom level for the slider range
-    let maxZoomLevel: CGFloat
+    var maxZoomLevel: CGFloat {
+        zoomSteps.last!.zoom
+    }
     
     /// Array of zoom steps for tick marks and magnetic snapping
     let zoomSteps: [ZoomStep]
     
-    /// Height of the zoom wheel component
-    let height: CGFloat
-
-        
+    let configuration: ZoomWheelConfiguration
+    
     @State private var wheelRotation: CGFloat = 0
     @State private var targetRotation: CGFloat = 0
     
@@ -64,38 +64,35 @@ public struct ZoomWheel: View {
     
     /// Creates a zoom wheel with the specified parameters.
     /// 
+    /// The zoom range (min/max) is automatically derived from the first and last
+    /// zoom steps in the provided array.
+    /// 
     /// - Parameters:
     ///   - zoomLevel: Binding to current zoom level
-    ///   - minZoomLevel: Minimum zoom level for the slider range
-    ///   - maxZoomLevel: Maximum zoom level for the slider range
-    ///   - zoomSteps: Array of zoom steps for tick marks and labels
-    ///   - height: Height of the zoom wheel component
+    ///   - zoomSteps: Array of zoom steps for tick marks and labels (determines zoom range)
+    ///   - configuration: Appearance and behavior configuration (default: .init())
     public init(
         zoomLevel: Binding<CGFloat>,
-        minZoomLevel: CGFloat,
-        maxZoomLevel: CGFloat,
         zoomSteps: [ZoomStep],
-        height: CGFloat
+        configuration: ZoomWheelConfiguration = .init()
     ) {
         self._zoomLevel = zoomLevel
-        self.minZoomLevel = minZoomLevel
-        self.maxZoomLevel = maxZoomLevel
         self.zoomSteps = zoomSteps
-        self.height = height
+        self.configuration = configuration
     }
     
     private func radius(width: CGFloat) -> CGFloat {
         // Calculate radius from chord length (width) and segment height
         // Formula: r = (chord² / (8 * height)) + (height / 2)
         let chord = width
-        let segmentHeight = height
+        let segmentHeight = configuration.height
         return (chord * chord) / (8 * segmentHeight) + (segmentHeight / 2)
     }
     
     private func centerY(width: CGFloat) -> CGFloat {
         // Calculate the correct center Y position for the circle
         // so that the visible segment has exactly the specified height
-        return radius(width: width) - height
+        return radius(width: width) - configuration.height
     }
     
     @ViewBuilder
@@ -139,7 +136,7 @@ public struct ZoomWheel: View {
                             .foregroundColor(isActive ? .yellow : .white)
                             .scaleEffect(scale)
                             .opacity(opacity)
-                        if step.type == .focalLength, let unit = step.focalLength {
+                        if configuration.displayFocalLength, step.type == .focalLength, let unit = step.focalLength {
                             Text(unit)
                                 .font(.caption2)
                                 .scaleEffect(1)
@@ -171,10 +168,10 @@ public struct ZoomWheel: View {
                     markings(width: width)
                 }
                 .rotationEffect(.degrees(wheelRotation))
-                .position(x: width / 2, y: height + centerY(width: width))
+                .position(x: width / 2, y: configuration.height + centerY(width: width))
                 .clipped() // Clip to visible area
             }
-            .circleSegment(width: width, height: height)
+            .circleSegment(width: width, height: configuration.height)
             .overlay {
                 // Fixed yellow indicator at the top center
                 Group {
@@ -194,7 +191,7 @@ public struct ZoomWheel: View {
 
             }
         }
-        .frame(height: height)
+        .frame(height: configuration.height)
         .task {
             cachedTickMarks = generateTickMarks()
             cachedTickAngles = cachedTickMarks.map { $0.toZoomAngle(min: minZoomLevel, max: maxZoomLevel) }

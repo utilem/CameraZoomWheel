@@ -43,15 +43,20 @@ public struct ZoomControl: View {
     
     /// Array of discrete zoom steps that define snapping points and button values
     let zoomSteps: [ZoomStep]
-
+    
+    /// Configuration for customizing appearance and behavior of zoom components
+    let configuration: ZoomWheelConfiguration
+    
     /// Minimum zoom level derived from first zoom step
-    let minZoomLevel: CGFloat
+    var minZoomLevel: CGFloat {
+        zoomSteps.first!.zoom
+    }
     
     /// Maximum zoom level derived from last zoom step
-    let maxZoomLevel: CGFloat
-    
-    // Remove hardcoded buttonZoomValues - will use zoomSteps directly
-    
+    var maxZoomLevel: CGFloat {
+        zoomSteps.last!.zoom
+    }
+        
     @State private var showSlider = false
     @State private var longPressTimer: Timer?
     @State private var hideTimer: Timer?
@@ -64,14 +69,20 @@ public struct ZoomControl: View {
 
     /// Creates a zoom control with the specified zoom level binding and steps.
     /// 
+    /// The control automatically derives its zoom range from the first and last zoom steps.
+    /// 
     /// - Parameters:
     ///   - zoomLevel: Binding to current zoom level that will be updated by user interaction
     ///   - steps: Array of zoom steps defining available zoom levels (defaults to `ZoomStep.defaultSteps`)
-    public init(zoomLevel: Binding<CGFloat>, steps: [ZoomStep] = ZoomStep.defaultSteps) {
+    ///   - configuration: Appearance and behavior customization (defaults to `.init()`)
+    public init(
+        zoomLevel: Binding<CGFloat>,
+        steps: [ZoomStep] = ZoomStep.defaultSteps,
+        configuration: ZoomWheelConfiguration = .init()
+    ) {
         self._zoomLevel = zoomLevel
         self.zoomSteps = steps
-        self.minZoomLevel = steps.first!.zoom
-        self.maxZoomLevel = steps.last!.zoom
+        self.configuration = configuration
     }
     
     public var body: some View {
@@ -80,10 +91,8 @@ public struct ZoomControl: View {
                 // Zoom Slider
                 ZoomWheel(
                     zoomLevel: $zoomLevel,
-                    minZoomLevel: minZoomLevel,
-                    maxZoomLevel: maxZoomLevel,
                     zoomSteps: zoomSteps,
-                    height: 130
+                    configuration: configuration
                 )
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .scale(scale: 0.9)),
@@ -96,6 +105,7 @@ public struct ZoomControl: View {
                     zoomValues: zoomSteps
                 )
                 .padding(.bottom)
+                .offset(y: configuration.buttonOffset)
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .scale(scale: 0.9)),
                     removal: .opacity.combined(with: .scale(scale: 1.1))
