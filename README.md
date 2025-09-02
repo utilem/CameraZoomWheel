@@ -52,10 +52,7 @@ struct CameraView: View {
             VStack {
                 Spacer()
                 
-                ZoomControl(
-                    zoomLevel: $zoomLevel,
-                    steps: ZoomStep.defaultSteps
-                )
+                ZoomControl(zoomLevel: $zoomLevel)
             }
         }
     }
@@ -72,7 +69,10 @@ let customSteps: [ZoomStep] = [
     ZoomStep(zoom: 5.0, type: .value)
 ]
 
-ZoomControl(zoomLevel: $zoomLevel, steps: customSteps)
+ZoomControl(
+    zoomLevel: $zoomLevel, 
+    steps: customSteps
+)
 ```
 
 ### Device-Specific Configuration
@@ -92,7 +92,10 @@ guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera,
 // - Ultra-wide availability (< 1.0x zoom)
 // - Telephoto ranges (2x, 3x, 5x based on device capabilities)
 // - Maximum zoom limits
-ZoomControl(zoomLevel: $zoomLevel, steps: camera.zoomSteps)
+ZoomControl(
+    zoomLevel: $zoomLevel, 
+    steps: camera.zoomSteps
+)
 ```
 
 **What `camera.zoomSteps` provides:**
@@ -103,6 +106,27 @@ ZoomControl(zoomLevel: $zoomLevel, steps: camera.zoomSteps)
 
 This ensures your zoom control perfectly matches what the device camera can actually achieve, providing a native iOS camera app experience.
 
+### Customization with Configuration
+
+```swift
+let config = ZoomWheelConfiguration(
+    buttonOffset: -10,        // Move buttons up by 10 points
+    height: 150,             // Taller zoom wheel
+    displayFocalLength: false // Hide focal length labels
+)
+
+ZoomControl(
+    zoomLevel: $zoomLevel,
+    steps: customSteps,
+    configuration: config
+)
+```
+
+**Configuration Options:**
+- `buttonOffset: CGFloat` - Vertical positioning of zoom buttons (default: 0)
+- `height: CGFloat` - Height of the circular zoom wheel (default: 130)  
+- `displayFocalLength: Bool` - Whether to show focal length labels (default: true)
+
 ## Components
 
 ### ZoomControl
@@ -110,7 +134,8 @@ Main orchestrating component that manages both button and wheel modes.
 
 **Properties:**
 - `zoomLevel: Binding<CGFloat>` - Current zoom level
-- `steps: [ZoomStep]` - Available zoom levels and display configuration
+- `steps: [ZoomStep]` - Available zoom levels and display configuration (default: ZoomStep.defaultSteps)
+- `configuration: ZoomWheelConfiguration` - Customization options (default: .init())
 
 **Behavior:**  
 - **Tap**: Use zoom buttons for quick selection
