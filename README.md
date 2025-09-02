@@ -7,6 +7,7 @@ A SwiftUI package providing advanced camera zoom controls with both discrete but
 - **Dual Interface**: Switch between zoom buttons and circular zoom wheel via long press
 - **Logarithmic Distribution**: Natural zoom progression across 90° arc  
 - **Magnetic Snapping**: Smooth attraction to common zoom levels during interaction
+- **Responsive Layout**: Components adapt automatically to container width while maintaining proper positioning
 - **Device Awareness**: Adapts to actual camera capabilities (real device vs simulator)
 - **Customizable**: Configurable zoom steps, ranges, and styling
 - **Modern SwiftUI**: Built with SwiftUI exclusively, supports iOS 17+
