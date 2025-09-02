@@ -52,8 +52,6 @@ public struct ZoomWheel: View {
     /// Height of the zoom wheel component
     let height: CGFloat
 
-    /// Width of the zoom wheel (full screen width)
-    let width: CGFloat = UIScreen.main.bounds.width
         
     @State private var wheelRotation: CGFloat = 0
     @State private var targetRotation: CGFloat = 0
@@ -86,7 +84,7 @@ public struct ZoomWheel: View {
         self.height = height
     }
     
-    private var radius: CGFloat {
+    private func radius(width: CGFloat) -> CGFloat {
         // Calculate radius from chord length (width) and segment height
         // Formula: r = (chord² / (8 * height)) + (height / 2)
         let chord = width
@@ -94,14 +92,14 @@ public struct ZoomWheel: View {
         return (chord * chord) / (8 * segmentHeight) + (segmentHeight / 2)
     }
     
-    private var centerY: CGFloat {
+    private func centerY(width: CGFloat) -> CGFloat {
         // Calculate the correct center Y position for the circle
         // so that the visible segment has exactly the specified height
-        return radius - height
+        return radius(width: width) - height
     }
     
     @ViewBuilder
-    private var tickMarks: some View {
+    private func tickMarks(width: CGFloat) -> some View {
         // Fine grid lines with 0.1 spacing near zoom steps
         ForEach(Array(zip(cachedTickMarks, cachedTickAngles).enumerated()), id: \.offset) { index, tickData in
             let (tickZoom, angle) = tickData
@@ -113,13 +111,13 @@ public struct ZoomWheel: View {
                     width: 1,
                     height: 17
                 )
-                .offset(y: -radius + 13)
+                .offset(y: -radius(width: width) + 13)
                 .rotationEffect(.degrees(angle))
         }
     }
     
     @ViewBuilder
-    private var markings: some View {
+    private func markings(width: CGFloat) -> some View {
         // Main markings for zoom steps (logarithmically distributed)
         ForEach(Array(zoomSteps.enumerated()), id: \.offset) { index, step in
             let angle = step.zoom.toZoomAngle(min: minZoomLevel, max: maxZoomLevel)
@@ -148,14 +146,14 @@ public struct ZoomWheel: View {
                                 .foregroundColor(isActive ? .yellow.opacity(0.9) : .white.opacity(0.5))
                         }
                     }
-                    .offset(y: -radius + 40)
+                    .offset(y: -radius(width: width) + 40)
                 } else if step.type == .dot {
                     Circle()
                         .fill(Color.white)
                         .frame(width: 3, height: 3)
                         .scaleEffect(scale)
                         .opacity(opacity)
-                        .offset(y: -radius + 37)
+                        .offset(y: -radius(width: width) + 37)
                 }
             }
             .rotationEffect(.degrees(angle))
@@ -163,35 +161,40 @@ public struct ZoomWheel: View {
     }
     
     public var body: some View {
-        ZStack {
-            // Rotating zoom wheel
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            
             ZStack {
-                tickMarks
-                markings
+                // Rotating zoom wheel
+                ZStack {
+                    tickMarks(width: width)
+                    markings(width: width)
+                }
+                .rotationEffect(.degrees(wheelRotation))
+                .position(x: width / 2, y: height + centerY(width: width))
+                .clipped() // Clip to visible area
             }
-            .rotationEffect(.degrees(wheelRotation))
-            .position(x: width / 2, y: height + centerY)
-            .clipped() // Clip to visible area
-        }
-        .circleSegment(width: width, height: height)
-        .overlay {
-            // Fixed yellow indicator at the top center
-            Group {
-                Triangle()
-                    .fill(Color.yellow)
-                    .frame(width: 8, height: 14)
-                    .rotationEffect(.degrees(180))
-                    .position(x: width / 2, y: 8)
-                
-                // Central zoom display
-                Text("\(formatZoomValue(zoomLevel, suffix: "×"))")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.yellow)
-                    .position(x: width / 2, y: 35)
-            }
+            .circleSegment(width: width, height: height)
+            .overlay {
+                // Fixed yellow indicator at the top center
+                Group {
+                    Triangle()
+                        .fill(Color.yellow)
+                        .frame(width: 8, height: 14)
+                        .rotationEffect(.degrees(180))
+                        .position(x: width / 2, y: 8)
+                    
+                    // Central zoom display
+                    Text("\(formatZoomValue(zoomLevel, suffix: "×"))")
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.yellow)
+                        .position(x: width / 2, y: 35)
+                }
 
+            }
         }
+        .frame(height: height)
         .task {
             cachedTickMarks = generateTickMarks()
             cachedTickAngles = cachedTickMarks.map { $0.toZoomAngle(min: minZoomLevel, max: maxZoomLevel) }
