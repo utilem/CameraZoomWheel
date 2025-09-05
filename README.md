@@ -14,7 +14,7 @@ A SwiftUI package providing advanced camera zoom controls with both discrete but
 
 ## Screenshots
 
-*Add screenshots showing button mode, wheel mode, and transitions*
+![ZoomWheelSimulator](assets/ZoomWheelSimulator.gif)
 
 ## Installation
 
