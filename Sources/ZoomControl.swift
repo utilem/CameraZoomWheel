@@ -146,7 +146,7 @@ public struct ZoomControl: View {
         
         // Reset animation flag after animation completes
         Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { _ in
-            Task { @MainActor in
+            MainActor.assumeIsolated { [self] in
                 isAnimatingSlider = false
             }
         }
@@ -160,13 +160,12 @@ public struct ZoomControl: View {
         
         // Start new timer
         longPressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
-            // Long Press triggered
-            Task { @MainActor in
+            MainActor.assumeIsolated { [self] in
                 isLongPressing = true
-                
+
                 // Reset previous location when switching to slider mode
                 previousDragLocation = nil
-                
+
                 animateSlider(show: true)
             }
         }
@@ -187,12 +186,11 @@ public struct ZoomControl: View {
         // Hide slider if it was shown
         if isLongPressing, !sliderIsDragging {
             hideTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { _ in
-                Task { @MainActor in
-                    // Long Press triggered
+                MainActor.assumeIsolated { [self] in
                     isLongPressing = false
-                    
+
                     animateSlider(show: false)
-                    
+
                     hideTimer?.invalidate()
                     hideTimer = nil
                 }
@@ -246,23 +244,19 @@ public struct ZoomControl: View {
     // Logarithmic distribution functions from ZoomWheel
     
     private func applyDragSnapping(_ targetZoom: CGFloat) -> CGFloat {
-        let snapThreshold: CGFloat = 0.05 // Sensitivity for snapping during drag
+        let snapThreshold: CGFloat = 0.05
 
-        // Use only zoomSteps as snap points
         let snapPoints = zoomSteps.map { $0.zoom }
 
-        // Find nearest snap point
         if let nearestSnap = snapPoints.min(by: { abs($0 - targetZoom) < abs($1 - targetZoom) }) {
             let distance = abs(nearestSnap - targetZoom)
 
             if distance < snapThreshold {
-                // Trigger haptic feedback when snapping to a new zoom level
-                if abs(nearestSnap - lastSnappedZoom) > 0.01 { // Avoid repeated feedback for same value
+                if abs(nearestSnap - lastSnappedZoom) > 0.01 {
                     lastSnappedZoom = nearestSnap
                 }
-                
-                // Smooth magnetic attraction to snap point
-                let snapStrength: CGFloat = 0.2 // Strength of the magnetic effect
+
+                let snapStrength: CGFloat = 0.2
                 return targetZoom + (nearestSnap - targetZoom) * snapStrength
             }
         }
@@ -271,9 +265,8 @@ public struct ZoomControl: View {
     }
 
     private func snapToNearestZoomStep() {
-        let snapThreshold = 0.05 // Much smaller threshold to only snap when very close
+        let snapThreshold: CGFloat = 0.05
 
-        // Use only zoomSteps as snap points
         let snapPoints = zoomSteps.map { $0.zoom }
 
         if let nearestStep = snapPoints.min(by: { abs($0 - zoomLevel) < abs($1 - zoomLevel) }) {

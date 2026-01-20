@@ -36,7 +36,7 @@ struct ContentView: View {
 #else
                 CameraView(image: $viewModel.currentFrame)
                     .onChange(of: zoomLevel) { _, newValue in
-                        viewModel.zoomValue = newValue
+                        viewModel.setZoomValue(newValue)
                     }
 #endif
                 VStack {

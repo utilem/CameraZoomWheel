@@ -5,157 +5,168 @@
 //  Created by Gianluca Orpello on 27/02/24.
 //
 
-import AVFoundation
+@preconcurrency import AVFoundation
 import CoreImage
 
 import CameraZoomWheel
 
-extension CameraManager {
-    
-    var availableZoomFactors: [ZoomStep] {
-        systemPreferredCamera?.zoomSteps ?? ZoomStep.defaultSteps
-    }
-    
-    var zoomValue: CGFloat {
-        get {
-            systemPreferredCamera?.videoZoomFactor ?? 1
-        }
-        set {
-            do {
-                guard let systemPreferredCamera else { return }
-                
-                guard newValue >= systemPreferredCamera.minAvailableVideoZoomFactor else { return }
-                guard newValue <= systemPreferredCamera.maxAvailableVideoZoomFactor else { return }
+// MARK: - Sample Buffer Delegate
 
-                try systemPreferredCamera.lockForConfiguration()
-                systemPreferredCamera.ramp(toVideoZoomFactor: newValue, withRate: 4)
-                systemPreferredCamera.unlockForConfiguration()
-            } catch {
-                print("error zooming camera: \(error)")
-            }
+/// Separate delegate class for handling sample buffer callbacks.
+/// Must be a class (not actor) to conform to NSObjectProtocol and the delegate protocol.
+/// Marked nonisolated to prevent implicit MainActor isolation from project settings.
+@preconcurrency
+final class CameraSampleBufferDelegate: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
+    private let addToPreviewStream: @Sendable (CGImage) -> Void
+
+    nonisolated init(addToPreviewStream: @escaping @Sendable (CGImage) -> Void) {
+        self.addToPreviewStream = addToPreviewStream
+        super.init()
+    }
+
+    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard let currentFrame = sampleBuffer.cgImage else {
+            return
         }
+        addToPreviewStream(currentFrame)
     }
 }
 
-class CameraManager: NSObject {
-    
+// MARK: - Camera Manager Actor
+
+actor CameraManager {
+
     private let captureSession = AVCaptureSession()
     private var deviceInput: AVCaptureDeviceInput?
     private var videoOutput: AVCaptureVideoDataOutput?
-    private let systemPreferredCamera = AVCaptureDevice.default(for: .video)
+    nonisolated let systemPreferredCamera = AVCaptureDevice.default(for: .video)
 
-    private var sessionQueue = DispatchQueue(label: "video.preview.session")
-    
-    private var addToPreviewStream: ((CGImage) -> Void)?
-    
-    lazy var previewStream: AsyncStream<CGImage> = {
-        AsyncStream { continuation in
-            addToPreviewStream = { cgImage in
-                continuation.yield(cgImage)
-            }
+    private let sessionQueue = DispatchQueue(label: "video.preview.session")
+
+    private var sampleBufferDelegate: CameraSampleBufferDelegate?
+    private var streamContinuation: AsyncStream<CGImage>.Continuation?
+
+    nonisolated let previewStream: AsyncStream<CGImage>
+
+    // MARK: - Zoom Properties
+
+    nonisolated var availableZoomFactors: [ZoomStep] {
+        systemPreferredCamera?.zoomSteps ?? ZoomStep.defaultSteps
+    }
+
+    nonisolated var currentZoomValue: CGFloat {
+        systemPreferredCamera?.videoZoomFactor ?? 1
+    }
+
+    func setZoomValue(_ newValue: CGFloat) {
+        guard let systemPreferredCamera else { return }
+        guard newValue >= systemPreferredCamera.minAvailableVideoZoomFactor else { return }
+        guard newValue <= systemPreferredCamera.maxAvailableVideoZoomFactor else { return }
+
+        do {
+            try systemPreferredCamera.lockForConfiguration()
+            systemPreferredCamera.ramp(toVideoZoomFactor: newValue, withRate: 4)
+            systemPreferredCamera.unlockForConfiguration()
+        } catch {
+            print("error zooming camera: \(error)")
         }
-    }()
-    
+    }
+
+    // MARK: - Initialization
+
+    init() {
+        var continuation: AsyncStream<CGImage>.Continuation?
+        previewStream = AsyncStream { cont in
+            continuation = cont
+        }
+        streamContinuation = continuation
+
+        let addToStream: @Sendable (CGImage) -> Void = { [continuation] image in
+            continuation?.yield(image)
+        }
+        sampleBufferDelegate = CameraSampleBufferDelegate(addToPreviewStream: addToStream)
+    }
+
+    // MARK: - Session Management
+
+    func start() async {
+        await configureSession()
+        await startSession()
+    }
+
     private var isAuthorized: Bool {
         get async {
             let status = AVCaptureDevice.authorizationStatus(for: .video)
-            
-            // Determine if the user previously authorized camera access.
             var isAuthorized = status == .authorized
-            
-            // If the system hasn't determined the user's authorization status,
-            // explicitly prompt them for approval.
+
             if status == .notDetermined {
                 isAuthorized = await AVCaptureDevice.requestAccess(for: .video)
             }
-            
+
             return isAuthorized
         }
     }
-    
-    override init() {
-        super.init()
-        
-        Task {
-            await configureSession()
-            await startSession()
-        }
-    }
-    
+
     private func configureSession() async {
         guard await isAuthorized,
               let systemPreferredCamera,
               let deviceInput = try? AVCaptureDeviceInput(device: systemPreferredCamera)
         else { return }
-        
+
         captureSession.beginConfiguration()
-        
+
         defer {
-            self.captureSession.commitConfiguration()
+            captureSession.commitConfiguration()
         }
-        
+
         let videoOutput = AVCaptureVideoDataOutput()
-       
-        videoOutput.setSampleBufferDelegate(self, queue: sessionQueue)
-        
+
+        if let delegate = sampleBufferDelegate {
+            videoOutput.setSampleBufferDelegate(delegate, queue: sessionQueue)
+        }
+
         guard captureSession.canAddInput(deviceInput) else {
             return
         }
-        
+
         guard captureSession.canAddOutput(videoOutput) else {
             return
         }
-        
+
         captureSession.addInput(deviceInput)
         captureSession.addOutput(videoOutput)
 
-        //For a vertical orientation of the camera stream
         videoOutput.connection(with: .video)?.videoRotationAngle = 90
+
+        self.deviceInput = deviceInput
+        self.videoOutput = videoOutput
     }
-    
-    
+
     private func startSession() async {
         guard await isAuthorized else { return }
-        
+
         await withCheckedContinuation { continuation in
-            Task.detached { [weak self] in
-                await self?.captureSession.startRunning()
+            sessionQueue.async { [captureSession] in
+                captureSession.startRunning()
                 continuation.resume()
             }
         }
     }
-    
-    private func stopSession() async {
+
+    func stopSession() async {
         await withCheckedContinuation { continuation in
-            Task.detached { [weak self] in
-                await self?.captureSession.stopRunning()
+            sessionQueue.async { [captureSession] in
+                captureSession.stopRunning()
                 continuation.resume()
             }
         }
     }
-    
-    private func rotate(by angle: CGFloat, from connection: AVCaptureConnection) {
-        guard connection.isVideoRotationAngleSupported(angle) else { return }
-        connection.videoRotationAngle = angle
-    }
-
 }
 
-extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
-    
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        guard let currentFrame = sampleBuffer.cgImage else { 
-            print("Can't translate to CGImage")
-            return
-        }
-        addToPreviewStream?(currentFrame)
-    }
-    
-}
-
+// MARK: - Extensions
 
 extension CMSampleBuffer {
-    var cgImage: CGImage? {
+    nonisolated var cgImage: CGImage? {
         let pixelBuffer: CVPixelBuffer? = CMSampleBufferGetImageBuffer(self)
         guard let imagePixelBuffer = pixelBuffer else { return nil }
         return CIImage(cvPixelBuffer: imagePixelBuffer).cgImage
@@ -163,7 +174,7 @@ extension CMSampleBuffer {
 }
 
 extension CIImage {
-    var cgImage: CGImage? {
+    nonisolated var cgImage: CGImage? {
         let ciContext = CIContext()
         guard let cgImage = ciContext.createCGImage(self, from: self.extent) else { return nil }
         return cgImage
