@@ -26,7 +26,7 @@ import SwiftUI
 ///     configuration: config
 /// )
 /// ```
-public struct ZoomWheelConfiguration {
+public struct ZoomWheelConfiguration: Sendable {
     /// Vertical offset for the zoom button bar positioning.
     ///
     /// Positive values move buttons down, negative values move them up.

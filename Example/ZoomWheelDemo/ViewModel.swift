@@ -9,23 +9,24 @@ import Foundation
 import CoreImage
 import CameraZoomWheel
 
+@MainActor
 @Observable
-class ViewModel {
+final class ViewModel {
     var currentFrame: CGImage?
-    
+
     private let cameraManager = CameraManager()
-    
+
     init() {
         Task {
+            await cameraManager.start()
             await handleCameraPreviews()
         }
     }
-    
-    func handleCameraPreviews() async {
+
+    private func handleCameraPreviews() async {
         for await image in cameraManager.previewStream {
-            Task { @MainActor in
-                currentFrame = image
-            }
+            guard !Task.isCancelled else { break }
+            currentFrame = image
         }
     }
 }
@@ -33,14 +34,15 @@ class ViewModel {
 extension ViewModel {
 
     var zoomValue: CGFloat {
-        get {
-            return cameraManager.zoomValue
-        }
-        set {
-            cameraManager.zoomValue = newValue
+        cameraManager.currentZoomValue
+    }
+
+    func setZoomValue(_ newValue: CGFloat) {
+        Task {
+            await cameraManager.setZoomValue(newValue)
         }
     }
-    
+
     var zoomSteps: [ZoomStep] {
         cameraManager.availableZoomFactors
     }
