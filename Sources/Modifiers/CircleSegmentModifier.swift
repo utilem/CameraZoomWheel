@@ -79,13 +79,15 @@ extension View {
 }
 
 #Preview {
+    GeometryReader { reader in
     VStack {
         Spacer()
         
         Text("Hello, World!")
             .font(.largeTitle)
             .foregroundStyle(.white)
-            .circleSegment(width: UIScreen.main.bounds.width, height: 130, color: .blue.opacity(0.4))
+            .circleSegment(width: reader.size.width, height: 130, color: .blue.opacity(0.4))
     }
     .ignoresSafeArea()
+    }
 }
