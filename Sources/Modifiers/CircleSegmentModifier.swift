@@ -80,14 +80,14 @@ extension View {
 
 #Preview {
     GeometryReader { reader in
-    VStack {
-        Spacer()
-        
-        Text("Hello, World!")
-            .font(.largeTitle)
-            .foregroundStyle(.white)
-            .circleSegment(width: reader.size.width, height: 130, color: .blue.opacity(0.4))
-    }
-    .ignoresSafeArea()
+        VStack {
+            Spacer()
+            
+            Text("Hello, World!")
+                .font(.largeTitle)
+                .foregroundStyle(.white)
+                .circleSegment(width: reader.size.width, height: 130, color: .blue.opacity(0.4))
+        }
+        .ignoresSafeArea()
     }
 }
