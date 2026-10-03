@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "CameraZoomWheel",
     platforms: [
-        .iOS(.v17), .macOS(.v14)
+        .iOS(.v17), .macOS(.v15)
     ],
     products: [
         .library(

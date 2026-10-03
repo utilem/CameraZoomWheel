@@ -147,6 +147,6 @@ extension AVCaptureDevice {
         return ZoomStep.defaultSteps
 #else
         return ZoomStep.zoomSteps(from: minAvailableVideoZoomFactor, to: maxAvailableVideoZoomFactor)
-        #endif
+#endif
     }
 }
