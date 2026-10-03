@@ -143,6 +143,10 @@ extension AVCaptureDevice {
     ///
     /// - Returns: Array of zoom steps tailored to this device's zoom range
     public var zoomSteps: [ZoomStep] {
+#if os(macOS)
+        return ZoomStep.defaultSteps
+#else
         return ZoomStep.zoomSteps(from: minAvailableVideoZoomFactor, to: maxAvailableVideoZoomFactor)
+        #endif
     }
 }
